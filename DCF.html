@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DCF 估值模型计算器 (专业版)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--accent-color);
+            outline: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+        }
+
+        /* Result Section Styles */
+        .result-header {
+            text-align: center;
+            margin-bottom: 20px;
+            background: #eef7ff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #d6e9f9;
+        }
+
+        .final-price {
+            font-size: 2.8rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            display: block;
+            margin: 10px 0;
+        }
+
+        .company-tag {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        .sub-result {
+            font-size: 0.9rem;
+            color: #666;
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            text-align: right;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            text-align: left;
+            background-color: #f8f9fa;
+            color: #666;
+        }
+
+        .valuation-bridge {
+            margin-top: 20px;
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px dashed #ccc;
+        }
+
+        .bridge-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .bridge-row.total {
+            font-weight: bold;
+            border-top: 1px solid #ddd;
+            padding-top: 8px;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+        }
+
+        .unit-label {
+            font-size: 0.8rem;
+            color: #999;
+            float: right;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 左侧：输入区 -->
+    <div class="card">
+        <h2>1. 输入关键假设 (Input)</h2>
+        <span class="unit-label">默认单位：亿元 (人民币)</span>
+        
+        <!-- 新增：公司名称输入 -->
+        <div class="input-group">
+            <label>公司名称 / 股票代码</label>
+            <input type="text" id="companyName" value="贵州茅台 (示例)">
+        </div>
+
+        <div class="input-group">
+            <label>当前净利润 / FCF (Base)</label>
+            <input type="number" id="baseProfit" value="747">
+        </div>
+
+        <div class="input-group">
+            <label>总股本 (亿股)</label>
+            <input type="number" id="shares" value="12.56">
+        </div>
+
+        <div class="input-group">
+            <label>账上净现金 (现金 - 债务)</label>
+            <input type="number" id="netCash" value="1800">
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+        <div class="input-group">
+            <label>第1年增长率 (%)</label>
+            <input type="number" id="growthStart" value="15">
+        </div>
+
+        <div class="input-group">
+            <label>第5年增长率 (%) <small style="font-weight:normal; color:#888;">(逐年递减)</small></label>
+            <input type="number" id="growthEnd" value="10">
+        </div>
+
+        <div class="input-group">
+            <label>折现率/WACC (%) <small style="font-weight:normal; color:#888;">(建议 8%-12%)</small></label>
+            <input type="number" id="discountRate" value="8">
+        </div>
+
+        <div class="input-group">
+            <label>退出市盈率 (Exit PE) <small style="font-weight:normal; color:#888;">(5年后卖几倍?)</small></label>
+            <input type="number" id="exitPE" value="20">
+        </div>
+
+        <button class="btn" onclick="calculateDCF()">开始计算 (Calculate)</button>
+    </div>
+
+    <!-- 右侧：结果区 -->
+    <div class="card">
+        <!-- 动态标题 -->
+        <h2 id="resultTitle">2. 估值推演结果</h2>
+        
+        <div class="result-header">
+            <span class="sub-result">每股合理价值 (Fair Value Per Share)</span>
+            <span class="final-price" id="finalPriceDisplay">¥ 0.00</span>
+            <span class="sub-result" id="marketCapDisplay">对应总市值: ¥ 0 亿</span>
+        </div>
+
+        <!-- 详细预测表 -->
+        <table id="projectionTable">
+            <thead>
+                <tr>
+                    <th style="text-align: left;">年份</th>
+                    <th>增长率</th>
+                    <th>预测利润</th>
+                    <th>折现因子</th>
+                    <th>现值 (PV)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- JS 自动生成 -->
+            </tbody>
+        </table>
+
+        <!-- 估值桥 -->
+        <div class="valuation-bridge">
+            <div class="bridge-row">
+                <span>(+) 未来5年现金流现值</span>
+                <span id="sumPvDisplay">0</span>
+            </div>
+            <div class="bridge-row">
+                <span>(+) 5年后终值现值 (Terminal Value)</span>
+                <span id="termPvDisplay">0</span>
+            </div>
+            <div class="bridge-row">
+                <span>(+) 账上净现金</span>
+                <span id="cashDisplay">0</span>
+            </div>
+            <div class="bridge-row total">
+                <span>(=) 归属股东总价值 (Equity Value)</span>
+                <span id="totalValueDisplay">0</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function formatNumber(num) {
+        return new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 0 }).format(num);
+    }
+
+    function calculateDCF() {
+        // 1. 获取输入
+        const companyName = document.getElementById('companyName').value;
+        const baseProfit = parseFloat(document.getElementById('baseProfit').value);
+        const shares = parseFloat(document.getElementById('shares').value);
+        const netCash = parseFloat(document.getElementById('netCash').value);
+        
+        const gStart = parseFloat(document.getElementById('growthStart').value) / 100;
+        const gEnd = parseFloat(document.getElementById('growthEnd').value) / 100;
+        const wacc = parseFloat(document.getElementById('discountRate').value) / 100;
+        const exitPE = parseFloat(document.getElementById('exitPE').value);
+
+        // 更新标题
+        document.getElementById('resultTitle').innerText = "2. [" + companyName + "] 估值推演结果";
+
+        const tableBody = document.querySelector('#projectionTable tbody');
+        tableBody.innerHTML = '';
+
+        let currentProfit = baseProfit;
+        let sumPV = 0;
+        let discountFactor = 1;
+        
+        // 2. 循环计算未来5年
+        for (let i = 1; i <= 5; i++) {
+            // 计算当年的增长率 (线性递减)
+            let currentGrowth = gStart - ((gStart - gEnd) * (i - 1) / 4);
+            if (i === 1) currentGrowth = gStart; 
+
+            // 预测利润
+            currentProfit = currentProfit * (1 + currentGrowth);
+
+            // 折现因子 (1 / (1+r)^n)
+            discountFactor = 1 / Math.pow(1 + wacc, i);
+
+            // 现值
+            let pv = currentProfit * discountFactor;
+            sumPV += pv;
+
+            // 插入表格
+            const row = `
+                <tr>
+                    <td style="text-align: left;">第 ${i} 年</td>
+                    <td>${(currentGrowth * 100).toFixed(1)}%</td>
+                    <td>${formatNumber(currentProfit)}</td>
+                    <td>${discountFactor.toFixed(3)}</td>
+                    <td style="font-weight:bold; color:#2c3e50;">${formatNumber(pv)}</td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        }
+
+        // 3. 计算终值 (Terminal Value)
+        let terminalValue = currentProfit * exitPE;
+        let terminalValuePV = terminalValue * discountFactor; 
+
+        // 4. 总价值
+        let totalEnterpriseValue = sumPV + terminalValuePV;
+        let equityValue = totalEnterpriseValue + netCash;
+        let pricePerShare = equityValue / shares;
+
+        // 5. 更新显示
+        document.getElementById('sumPvDisplay').innerText = formatNumber(sumPV);
+        document.getElementById('termPvDisplay').innerText = formatNumber(terminalValuePV);
+        document.getElementById('cashDisplay').innerText = formatNumber(netCash);
+        document.getElementById('totalValueDisplay').innerText = "¥ " + formatNumber(equityValue);
+        
+        document.getElementById('finalPriceDisplay').innerText = "¥ " + pricePerShare.toFixed(2);
+        document.getElementById('marketCapDisplay').innerText = "对应总市值: ¥ " + formatNumber(equityValue) + " 亿";
+    }
+
+    // 初始化运行一次
+    window.onload = calculateDCF;
+</script>
+
+</body>
+</html>
